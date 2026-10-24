@@ -18,6 +18,12 @@ export interface LichessGameInfo {
   opponent?: { username?: string; rating?: number }
 }
 
+export interface LichessEvent {
+  type: string
+  game?: LichessGameInfo
+  [key: string]: unknown
+}
+
 export interface LichessBoardGameState {
   type: 'gameState'
   moves: string
@@ -45,11 +51,6 @@ export interface LichessBoardGameFull {
   state: LichessBoardGameState
 }
 
-type Event =
-  | { type: 'gameStart'; game: LichessGameInfo }
-  | { type: 'gameFinish'; game: LichessGameInfo }
-  | { type: string; [key: string]: unknown }
-
 export class LichessClient {
   private queue: Promise<unknown> = Promise.resolve()
   constructor(private token: string) {}
@@ -70,10 +71,10 @@ export class LichessClient {
     return response.json()
   }
 
-  async *eventStream(signal?: AbortSignal): AsyncGenerator<Event> {
+  async *eventStream(signal?: AbortSignal): AsyncGenerator<LichessEvent> {
     const response = await fetch(`${API}/stream/event`, { headers: this.headers(), signal })
     if (!response.ok) throw new Error(`Lichess event stream failed (${response.status})`)
-    yield* parseNdjson<Event>(response.body)
+    yield* parseNdjson<LichessEvent>(response.body)
   }
 
   async *gameStream(gameId: string, signal?: AbortSignal): AsyncGenerator<LichessBoardGameFull | LichessBoardGameState> {
