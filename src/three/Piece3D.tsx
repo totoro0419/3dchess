@@ -91,7 +91,9 @@ export function Piece3D({piece,selected,draggable,onClick,onDragStart,onDrop,onD
     onPointerCancel={e=>{const c=dragCandidate.current,o=group.current;if(!c||!o)return;releasePointer(e);dragCandidate.current=null;if(c.dragging)onDragStateChange(false);beginMotion('drag-return',o.position,squareToWorld(c.origin))}}
     onClick={e=>{e.stopPropagation();if(piece.captured)return;if(suppressClick.current){suppressClick.current=false;return}onClick()}}
   >
-    <PieceModel type={displayType} colorKey={piece.color}/>
+    <group scale={1.04}>
+      <PieceModel type={displayType} colorKey={piece.color}/>
+    </group>
     {selected&&!piece.captured&&<mesh position={[0,0.015,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[0.32,0.41,56]}/><meshBasicMaterial color="#f6c34e" transparent opacity={0.92}/></mesh>}
   </group>
 }
