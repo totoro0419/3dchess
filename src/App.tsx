@@ -75,7 +75,7 @@ export default function App(){
       try{
         setStreamLabel('event stream connected')
         for await(const event of client.eventStream(controller.signal)){
-          if(event.type==='gameStart'){
+          if(event.type==='gameStart' && event.game){
             setOnlineGame(event.game)
             setMode('lichess')
           } else if(event.type==='gameFinish' && event.game?.gameId===onlineGame?.gameId){
