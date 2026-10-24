@@ -75,12 +75,20 @@ export function Piece3D({piece,selected,draggable,onClick,onDragStart,onDrop,onD
 
   const displayType=isAnimating&&piece.previousType?piece.previousType:piece.type
   const pointerPoint=(e:ThreeEvent<PointerEvent>)=>{const p=new THREE.Vector3();return e.ray.intersectPlane(DRAG_PLANE,p)?p:null}
+  const capturePointer=(e:ThreeEvent<PointerEvent>)=>{
+    const target=e.nativeEvent.target as Element|null
+    target?.setPointerCapture?.(e.pointerId)
+  }
+  const releasePointer=(e:ThreeEvent<PointerEvent>)=>{
+    const target=e.nativeEvent.target as Element|null
+    if(target?.hasPointerCapture?.(e.pointerId))target.releasePointerCapture(e.pointerId)
+  }
 
   return <group ref={group} position={initial}
-    onPointerDown={e=>{if(!draggable||piece.captured)return;e.stopPropagation();(e.nativeEvent.target as Element|null)?.setPointerCapture?.(e.pointerId);dragCandidate.current={pointerId:e.pointerId,startX:e.nativeEvent.clientX,startY:e.nativeEvent.clientY,origin:piece.square,dragging:false}}}
-    onPointerMove={e=>{const c=dragCandidate.current,o=group.current;if(!c||c.pointerId!==e.pointerId||!o)return;if(!c.dragging){if(Math.hypot(e.nativeEvent.clientX-c.startX,e.nativeEvent.clientY-c.startY)<DRAG_THRESHOLD_PX)return;c.dragging=true;suppressClick.current=true;motion.current.active=false;onDragStart(c.origin);onDragStateChange(true)}e.stopPropagation();const p=pointerPoint(e);if(!p)return;o.position.set(THREE.MathUtils.clamp(p.x,-3.9,3.9),PIECE_BASE_Y+DRAG_LIFT,THREE.MathUtils.clamp(p.z,-3.9,3.9));o.scale.setScalar(1.035)}}
-    onPointerUp={e=>{const c=dragCandidate.current,o=group.current;if(!c||c.pointerId!==e.pointerId||!o)return;dragCandidate.current=null;if(!c.dragging)return;e.stopPropagation();onDragStateChange(false);const point=pointerPoint(e)??o.position.clone();const target=worldToSquare(point);const accepted=target?onDrop(c.origin,target):false;const destination=squareToWorld(accepted&&target?target:c.origin);if(accepted)suppressNextSquareMotion.current=true;beginMotion(accepted?'drag-snap':'drag-return',o.position,destination)}}
-    onPointerCancel={()=>{const c=dragCandidate.current,o=group.current;if(!c||!o)return;dragCandidate.current=null;onDragStateChange(false);beginMotion('drag-return',o.position,squareToWorld(c.origin))}}
+    onPointerDown={e=>{if(!draggable||piece.captured)return;e.stopPropagation();dragCandidate.current={pointerId:e.pointerId,startX:e.nativeEvent.clientX,startY:e.nativeEvent.clientY,origin:piece.square,dragging:false}}}
+    onPointerMove={e=>{const c=dragCandidate.current,o=group.current;if(!c||c.pointerId!==e.pointerId||!o)return;if(!c.dragging){if(Math.hypot(e.nativeEvent.clientX-c.startX,e.nativeEvent.clientY-c.startY)<DRAG_THRESHOLD_PX)return;c.dragging=true;capturePointer(e);suppressClick.current=true;motion.current.active=false;onDragStart(c.origin);onDragStateChange(true)}e.stopPropagation();const p=pointerPoint(e);if(!p)return;o.position.set(THREE.MathUtils.clamp(p.x,-3.9,3.9),PIECE_BASE_Y+DRAG_LIFT,THREE.MathUtils.clamp(p.z,-3.9,3.9));o.scale.setScalar(1.035)}}
+    onPointerUp={e=>{const c=dragCandidate.current,o=group.current;if(!c||c.pointerId!==e.pointerId||!o)return;releasePointer(e);dragCandidate.current=null;if(!c.dragging)return;e.stopPropagation();onDragStateChange(false);const point=pointerPoint(e)??o.position.clone();const target=worldToSquare(point);const accepted=target?onDrop(c.origin,target):false;const destination=squareToWorld(accepted&&target?target:c.origin);if(accepted)suppressNextSquareMotion.current=true;beginMotion(accepted?'drag-snap':'drag-return',o.position,destination)}}
+    onPointerCancel={e=>{const c=dragCandidate.current,o=group.current;if(!c||!o)return;releasePointer(e);dragCandidate.current=null;if(c.dragging)onDragStateChange(false);beginMotion('drag-return',o.position,squareToWorld(c.origin))}}
     onClick={e=>{e.stopPropagation();if(piece.captured)return;if(suppressClick.current){suppressClick.current=false;return}onClick()}}
   >
     <PieceModel type={displayType} colorKey={piece.color}/>
